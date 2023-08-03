@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'resizable_widget_args_info.dart';
 import 'resizable_widget_child_data.dart';
@@ -6,6 +8,8 @@ import 'separator_args_info.dart';
 import 'widget_size_info.dart';
 
 typedef SeparatorFactory = Widget Function(SeparatorArgsBasicInfo basicInfo);
+
+const double MIN_SIZE = 50;
 
 class ResizableWidgetModel {
   final ResizableWidgetArgsInfo _info;
@@ -138,11 +142,15 @@ class ResizableWidgetModel {
 
   double _resizeImpl(int widgetIndex, Offset offset) {
     final size = children[widgetIndex].size ?? 0;
-    children[widgetIndex].size =
+    double newSize =
         size + (_info.isHorizontalSeparator ? offset.dy : offset.dx);
-    children[widgetIndex].percentage =
-        children[widgetIndex].size! / maxSizeWithoutSeparators!;
-    return children[widgetIndex].size!;
+
+    // Controlla che la nuova dimensione non sia inferiore alla dimensione minima
+    newSize = max(MIN_SIZE, newSize);
+
+    children[widgetIndex].size = newSize;
+    children[widgetIndex].percentage = newSize / maxSizeWithoutSeparators!;
+    return newSize;
   }
 
   bool _isNearlyZero(double size) {

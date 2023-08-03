@@ -9,8 +9,6 @@ import 'widget_size_info.dart';
 
 typedef SeparatorFactory = Widget Function(SeparatorArgsBasicInfo basicInfo);
 
-const double MIN_SIZE = 50;
-
 class ResizableWidgetModel {
   final ResizableWidgetArgsInfo _info;
   final children = <ResizableWidgetChildData>[];
@@ -142,15 +140,11 @@ class ResizableWidgetModel {
 
   double _resizeImpl(int widgetIndex, Offset offset) {
     final size = children[widgetIndex].size ?? 0;
-    double newSize =
+    children[widgetIndex].size =
         size + (_info.isHorizontalSeparator ? offset.dy : offset.dx);
-
-    // Controlla che la nuova dimensione non sia inferiore alla dimensione minima
-    newSize = max(MIN_SIZE, newSize);
-
-    children[widgetIndex].size = newSize;
-    children[widgetIndex].percentage = newSize / maxSizeWithoutSeparators!;
-    return newSize;
+    children[widgetIndex].percentage =
+        children[widgetIndex].size! / maxSizeWithoutSeparators!;
+    return children[widgetIndex].size!;
   }
 
   bool _isNearlyZero(double size) {

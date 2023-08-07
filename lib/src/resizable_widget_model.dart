@@ -7,16 +7,14 @@ import 'widget_size_info.dart';
 
 typedef SeparatorFactory = Widget Function(SeparatorArgsBasicInfo basicInfo);
 
-enum ResizableWidgetResizeImplReturnState {
-  VALID,
-  INVALID
-}
+enum ResizableWidgetResizeImplReturnState { VALID, INVALID }
 
 class ResizableWidgetResizeImplReturn {
   ResizableWidgetResizeImplReturnState state;
   double size;
   double percent;
-  ResizableWidgetResizeImplReturn({required this.size, required this.percent, required this.state});
+  ResizableWidgetResizeImplReturn(
+      {required this.size, required this.percent, required this.state});
 }
 
 class ResizableWidgetModel {
@@ -38,28 +36,28 @@ class ResizableWidgetModel {
     final minPercentages = _info.minPercentages;
     for (var i = 0; i < size - 1; i++) {
       children.add(ResizableWidgetChildData(
-          originalChildren[i], originalPercentages[i],
+          originalChildren[i],
+          originalPercentages[i],
           (maxPercentages != null ? maxPercentages[i] : null),
-          (minPercentages != null ? minPercentages[i] : null)
-      ));
+          (minPercentages != null ? minPercentages[i] : null)));
       children.add(ResizableWidgetChildData(
-          separatorFactory.call(SeparatorArgsBasicInfo(
-            2 * i + 1,
-            _info.isHorizontalSeparator,
-            _info.isDisabledSmartHide,
-            _info.separatorSize,
-            _info.separatorColor,
-          )),
-          null,
-          null,
-          null,
-          ));
+        separatorFactory.call(SeparatorArgsBasicInfo(
+          2 * i + 1,
+          _info.isHorizontalSeparator,
+          _info.isDisabledSmartHide,
+          _info.separatorSize,
+          _info.separatorColor,
+        )),
+        null,
+        null,
+        null,
+      ));
     }
     children.add(ResizableWidgetChildData(
-        originalChildren[size - 1], originalPercentages[size - 1], 
-          (maxPercentages != null ? maxPercentages[size - 1] : null),
-          (minPercentages != null ? minPercentages[size - 1] : null)
-    ));
+        originalChildren[size - 1],
+        originalPercentages[size - 1],
+        (maxPercentages != null ? maxPercentages[size - 1] : null),
+        (minPercentages != null ? minPercentages[size - 1] : null)));
   }
 
   void setSizeIfNeeded(BoxConstraints constraints) {
@@ -86,18 +84,19 @@ class ResizableWidgetModel {
   }
 
   void resize(int separatorIndex, Offset offset) {
-    ResizableWidgetResizeImplReturn leftReturn  = _resizeImpl(separatorIndex - 1, offset, apply: false);
-    if(leftReturn.state != ResizableWidgetResizeImplReturnState.VALID) {
-       return;
+    ResizableWidgetResizeImplReturn leftReturn =
+        _resizeImpl(separatorIndex - 1, offset, apply: false);
+    if (leftReturn.state != ResizableWidgetResizeImplReturnState.VALID) {
+      return;
     }
 
-    ResizableWidgetResizeImplReturn rightReturn = _resizeImpl(separatorIndex + 1, offset * (-1), apply: false);
-    if(rightReturn.state != ResizableWidgetResizeImplReturnState.VALID) {
-       return;
+    ResizableWidgetResizeImplReturn rightReturn =
+        _resizeImpl(separatorIndex + 1, offset * (-1), apply: false);
+    if (rightReturn.state != ResizableWidgetResizeImplReturnState.VALID) {
+      return;
     }
     __applyResizeImpl(separatorIndex - 1, leftReturn);
     __applyResizeImpl(separatorIndex + 1, rightReturn);
-
 
     if (leftReturn.size < 0) {
       _resizeImpl(
@@ -124,7 +123,6 @@ class ResizableWidgetModel {
               : Offset(-rightReturn.size, 0));
     }
   }
-
 
   void callOnResized() {
     _info.onResized?.call(children
@@ -170,50 +168,44 @@ class ResizableWidgetModel {
     return true;
   }
 
+  ResizableWidgetResizeImplReturn _resizeImpl(int widgetIndex, Offset offset,
+      {bool apply = true}) {
+    final size = children[widgetIndex].size ?? 0;
+    final appliedSize =
+        size + (_info.isHorizontalSeparator ? offset.dy : offset.dx);
+    final appliedPercentage = appliedSize / maxSizeWithoutSeparators!;
 
-  ResizableWidgetResizeImplReturn _resizeImpl(int widgetIndex, Offset offset, {bool apply = true}) {
-    final size              = children[widgetIndex].size ?? 0;
-    final appliedSize       = size + (_info.isHorizontalSeparator ? offset.dy : offset.dx);
-    final appliedPercentage = size / maxSizeWithoutSeparators!;
+    double finalSize = appliedSize;
+    double finalPercentage = appliedPercentage;
 
-
-    /// Check if transformation will exceed the requested Min / Max value for the specific row / column
-    if(
-      (
-        (children[widgetIndex].minPercentage != null) &&
-        (children[widgetIndex].minPercentage! > appliedPercentage)  &&
-        (
-          ((_info.isHorizontalSeparator == false) && (offset.dx < 0)) ||
-          ((_info.isHorizontalSeparator == true)  && (offset.dy < 0))
-        )
-      ) ||
-      (
-        (children[widgetIndex].maxPercentage != null) &&
-        (children[widgetIndex].maxPercentage! < appliedPercentage)  &&
-        (
-          ((_info.isHorizontalSeparator == false) && (offset.dx > 0)) ||
-          ((_info.isHorizontalSeparator == true)  && (offset.dy > 0))
-        )
-      )
-    ) {
-      return ResizableWidgetResizeImplReturn(
-        size: children[widgetIndex].size!,
-        percent: children[widgetIndex].percentage!,
-        state: ResizableWidgetResizeImplReturnState.INVALID
-      );
+    if (children[widgetIndex].minPercentage != null &&
+        children[widgetIndex].minPercentage! > appliedPercentage) {
+      finalSize =
+          maxSizeWithoutSeparators! * children[widgetIndex].minPercentage!;
+      finalPercentage = children[widgetIndex].minPercentage!;
     }
-  
+
+    if (children[widgetIndex].maxPercentage != null &&
+        children[widgetIndex].maxPercentage! < appliedPercentage) {
+      finalSize =
+          maxSizeWithoutSeparators! * children[widgetIndex].maxPercentage!;
+      finalPercentage = children[widgetIndex].maxPercentage!;
+    }
+
     ResizableWidgetResizeImplReturn _data = ResizableWidgetResizeImplReturn(
-        size: appliedSize,
-        percent: appliedPercentage,
-        state: ResizableWidgetResizeImplReturnState.VALID
-      );
-    if(apply) { __applyResizeImpl(widgetIndex, _data); }    
+        size: finalSize,
+        percent: finalPercentage,
+        state: ResizableWidgetResizeImplReturnState.VALID);
+
+    if (apply) {
+      __applyResizeImpl(widgetIndex, _data);
+    }
+
     return _data;
   }
 
-
-  void __applyResizeImpl(int widgetIndex, ResizableWidgetResizeImplReturn data){
+  void __applyResizeImpl(
+      int widgetIndex, ResizableWidgetResizeImplReturn data) {
     children[widgetIndex].size = data.size;
     children[widgetIndex].percentage = data.percent;
   }
